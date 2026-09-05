@@ -1,0 +1,68 @@
+{
+  "parts": [
+    {
+      "part": 1,
+      "filename": "CMR_AI_swin_base_part_1_of_8.bin",
+      "cid": "bafybeid6x5safiu3wxryxnm72iobemupbqmi3lgyfdqucijzn76ij6bmoq",
+      "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeid6x5safiu3wxryxnm72iobemupbqmi3lgyfdqucijzn76ij6bmoq",
+      "sha256": "4b684534a66fc944437a34e565ad0254c4e743fc83307525fe5b81a8b1c437a9",
+      "size_bytes": 52428800
+    },
+    {
+      "part": 2,
+      "filename": "CMR_AI_swin_base_part_2_of_8.bin",
+      "cid": "bafybeihal2wzfjok4n5jj57q6p7d5vfgy477xxwaih5r2pawysdv4kwbka",
+      "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeihal2wzfjok4n5jj57q6p7d5vfgy477xxwaih5r2pawysdv4kwbka",
+      "sha256": "9b8037e6c96f457352ebd361da50c09d80f9dec52e84f96d25017129e6a5e342",
+      "size_bytes": 52428800
+    },
+    {
+      "part": 3,
+      "filename": "CMR_AI_swin_base_part_3_of_8.bin",
+      "cid": "bafybeignsqgcec7sncytoqhq7rpv4egchjqao4ohslaiqsqp77bpw5i7um",
+      "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeignsqgcec7sncytoqhq7rpv4egchjqao4ohslaiqsqp77bpw5i7um",
+      "sha256": "6cb64314e2882cc4754a4647ac4faf015930d4096d02918643d7e74fdf70d87a",
+      "size_bytes": 52428800
+    },
+    {
+      "part": 4,
+      "filename": "CMR_AI_swin_base_part_4_of_8.bin",
+      "cid": "bafybeiaecziblad5alv2mjsgjw75kgieyrdnqokcjg4l2vof5mrygoesxa",
+      "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeiaecziblad5alv2mjsgjw75kgieyrdnqokcjg4l2vof5mrygoesxa",
+      "sha256": "238506644a2539d76712b2220601566ef7bc072fde6eac83fcff88e2143d286f",
+      "size_bytes": 52428800
+    },
+    {
+      "part": 5,
+      "filename": "CMR_AI_swin_base_part_5_of_8.bin",
+      "cid": "bafybeic7pth6qagttb3jcogzqsrzvaa33mladnhebfht4nyvs37y2yqqui",
+      "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeic7pth6qagttb3jcogzqsrzvaa33mladnhebfht4nyvs37y2yqqui",
+      "sha256": "1e428015cd61b00649085d4d7109899a1866401975170708b2fafab013a5164c",
+      "size_bytes": 52428800
+    },
+    {
+      "part": 6,
+      "filename": "CMR_AI_swin_base_part_6_of_8.bin",
+      "cid": "bafybeid3v32qslv3w2yuafftwttulwpdmcplts2k6d6tcsbvqsje3jbawy",
+      "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeid3v32qslv3w2yuafftwttulwpdmcplts2k6d6tcsbvqsje3jbawy",
+      "sha256": "ccd42f760833d9201da68cbd7ab5d72e4b0399121297378d70ee2a0631fd35ce",
+      "size_bytes": 52428800
+    },
+    {
+      "part": 7,
+      "filename": "CMR_AI_swin_base_part_7_of_8.bin",
+      "cid": "bafybeidqyv6mdn3lcczpm6bd666s5pww4bt4xvgi6mcw2l3r2lemzivuum",
+      "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeidqyv6mdn3lcczpm6bd666s5pww4bt4xvgi6mcw2l3r2lemzivuum",
+      "sha256": "c6ddc8d11a620a0dc3f0dd08de9d917e45f26f5bd237d09ea61d522ff4ff31f6",
+      "size_bytes": 52428800
+    },
+    {
+      "part": 8,
+      "filename": "CMR_AI_swin_base_part_8_of_8.bin",
+      "cid": "bafybeih3scd7qbkx7qfx72klop57fiufkmfzbvfdtqbak2n5hguxgez47q",
+      "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeih3scd7qbkx7qfx72klop57fiufkmfzbvfdtqbak2n5hguxgez47q",
+      "sha256": "c1b55cbbbe77026b172e162d442d43f9d35489ec064acac765d9e0dadcbcbf67",
+      "size_bytes": 15577768
+    }
+  ]
+}

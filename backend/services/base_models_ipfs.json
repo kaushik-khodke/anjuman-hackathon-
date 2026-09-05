@@ -1,0 +1,77 @@
+[
+  {
+    "name": "CheXNet_DenseNet121_Base_Model",
+    "model_id": "cxr-pneumo-cnn",
+    "modality": "Chest X-ray",
+    "checkpoint_filename": "m-25012018-123527.pth.tar",
+    "file_cid": "bafybeieip6kesohaj76egx4da57i2x62nkanmkc5ehqvgvnjccdft2hoau",
+    "file_gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeieip6kesohaj76egx4da57i2x62nkanmkc5ehqvgvnjccdft2hoau",
+    "sha256": "656e239657a296e27cc2dd7bcfe706d2fcd0f8df061e33f3102bc08f45e8f223",
+    "size_bytes": 84191850,
+    "size_mb": 80.28,
+    "upload_status": "PINNED_TO_PINATA_IPFS"
+  },
+  {
+    "name": "CMR_AI_VideoSwinTransformer_Base_Model",
+    "model_id": "cmr-ai-vst",
+    "modality": "Cardiac MRI",
+    "checkpoint_filename": "swin_base_patch244_window877_kinetics600_22k.pth",
+    "manifest_cid": "bafkreiflbansvrtqrayr3jpnikt2sr3vrluubuffp7ot4pfh2id2kh2dsu",
+    "manifest_gateway_url": "https://gateway.pinata.cloud/ipfs/bafkreiflbansvrtqrayr3jpnikt2sr3vrluubuffp7ot4pfh2id2kh2dsu",
+    "sha256": "908cf24cfe5ef1b71ebe16bc98391a66f90d5a2ef48e424da0345d8dc8847e8f",
+    "size_bytes": 382579368,
+    "size_mb": 364.86,
+    "total_parts": 8,
+    "parts": [
+      {
+        "part": 1,
+        "cid": "bafybeid6x5safiu3wxryxnm72iobemupbqmi3lgyfdqucijzn76ij6bmoq",
+        "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeid6x5safiu3wxryxnm72iobemupbqmi3lgyfdqucijzn76ij6bmoq"
+      },
+      {
+        "part": 2,
+        "cid": "bafybeihal2wzfjok4n5jj57q6p7d5vfgy477xxwaih5r2pawysdv4kwbka",
+        "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeihal2wzfjok4n5jj57q6p7d5vfgy477xxwaih5r2pawysdv4kwbka"
+      },
+      {
+        "part": 3,
+        "cid": "bafybeignsqgcec7sncytoqhq7rpv4egchjqao4ohslaiqsqp77bpw5i7um",
+        "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeignsqgcec7sncytoqhq7rpv4egchjqao4ohslaiqsqp77bpw5i7um"
+      },
+      {
+        "part": 4,
+        "cid": "bafybeiaecziblad5alv2mjsgjw75kgieyrdnqokcjg4l2vof5mrygoesxa",
+        "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeiaecziblad5alv2mjsgjw75kgieyrdnqokcjg4l2vof5mrygoesxa"
+      },
+      {
+        "part": 5,
+        "cid": "bafybeic7pth6qagttb3jcogzqsrzvaa33mladnhebfht4nyvs37y2yqqui",
+        "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeic7pth6qagttb3jcogzqsrzvaa33mladnhebfht4nyvs37y2yqqui"
+      },
+      {
+        "part": 6,
+        "cid": "bafybeid3v32qslv3w2yuafftwttulwpdmcplts2k6d6tcsbvqsje3jbawy",
+        "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeid3v32qslv3w2yuafftwttulwpdmcplts2k6d6tcsbvqsje3jbawy"
+      },
+      {
+        "part": 7,
+        "cid": "bafybeidqyv6mdn3lcczpm6bd666s5pww4bt4xvgi6mcw2l3r2lemzivuum",
+        "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeidqyv6mdn3lcczpm6bd666s5pww4bt4xvgi6mcw2l3r2lemzivuum"
+      },
+      {
+        "part": 8,
+        "cid": "bafybeih3scd7qbkx7qfx72klop57fiufkmfzbvfdtqbak2n5hguxgez47q",
+        "gateway_url": "https://gateway.pinata.cloud/ipfs/bafybeih3scd7qbkx7qfx72klop57fiufkmfzbvfdtqbak2n5hguxgez47q"
+      }
+    ],
+    "upload_status": "PINNED_TO_PINATA_IPFS"
+  },
+  {
+    "name": "CT_CLIP_3D_Vision_Transformer_Base_Model",
+    "model_id": "ct-clip-3d",
+    "modality": "Chest CT Scan",
+    "checkpoint_filename": "CT-CLIP_v2.pt",
+    "size_mb": 1687.64,
+    "upload_status": "SKIPPED_LOCAL_ONLY"
+  }
+]
