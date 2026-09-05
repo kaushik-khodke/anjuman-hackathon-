@@ -1,0 +1,130 @@
+# Environments
+.venv/
+venv/
+env/
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# WhatsApp Gateway Session & Cache (DO NOT COMMIT)
+.wwebjs_auth/
+.wwebjs_cache/
+**/.wwebjs_auth/
+**/.wwebjs_cache/
+**/.wwebjs_auth/**
+**/.wwebjs_cache/**
+whatsapp_debug.log
+*.log
+
+# Build & Temp
+dist/
+build/
+.next/
+.turbo/
+.temp/ 
+supabase/.temp/
+.sh
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+
+# Secrets & Credentials
+.env
+.env.*
+*.env
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+!.env.example
+
+# OS & Filesystem
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# IDEs and Code Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Temporary, Cache & Scratch
+.temp/
+.tmp/
+*.tmp
+temp/
+scratch/
+test_files/
+commit_schedule.ps1
+chat_cih/
+
+# Project specifics
+serveo_stdout.txt
+serveo_stderr.txt
+tunnel_links.txt
+tunnel_url_only.txt
+serveo_url.txt
+lt_output.txt
+inspect_out.txt
+url_chars.txt
+*.csv
+cloudflared.exe
+
+# Debug outputs & temporary artifacts
+*_out.txt
+debug_*.json
+models_*.txt
+*_debug.log
+ts_error.txt
+build-out*.txt
+
+# ── Machine Learning Models, Checkpoints & Weights (DO NOT COMMIT) ──
+*.pt
+*.pth
+*.pth.tar
+*.ckpt
+*.bin
+*.safetensors
+*.onnx
+*.h5
+*.hdf5
+*.tflite
+*.joblib
+*.pkl
+
+# ML Checkpoints directories
+**/models/*.pt
+**/models/*.pth*
+**/models/*.tar*
+**/checkpoints/*.pt
+**/checkpoints/*.pth*
+**/checkpoints/*.tar*
+**/models/trained/
+**/checkpoints/trained/
+backend/ml/chexnet/models/
+backend/ml/CT-CLIP/models/
+backend/ml/CMR-AI/checkpoints/
+backend/ml/CMR-AI/models/
+backend/ml/CMR-AI/tools/
+
+# Medical imaging raw volume formats & caches
+*.nii
+*.nii.gz
+*.dcm
+*.dicom
+*.npz
+*.npy
+*.mhd
+*.raw
+
