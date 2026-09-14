@@ -19,28 +19,47 @@ import io
 import uuid
 import json
 import asyncio
+import logging
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
-import numpy as np
-from PIL import Image
-import torch
-import torchvision.transforms as transforms
-
-from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends, Query, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
 
 from core.logger import logger
-from services.pinata_service import pinata_service
-from ml.integration.model_registry import (
-    model_registry,
-    get_model_adapter,
-    get_model_spec,
-    normalize_category,
-    list_registered_models,
-)
-from ml.integration.xray_adapter import DatasetValidationError
+try:
+    from services.pinata_service import pinata_service
+except Exception:
+    pinata_service = None
+
+import numpy as np
+from PIL import Image
+try:
+    import torch
+    import torchvision.transforms as transforms
+    TORCH_AVAILABLE = True
+except Exception as e:
+    torch = None
+    transforms = None
+    TORCH_AVAILABLE = False
+
+try:
+    from ml.integration.model_registry import (
+        model_registry,
+        get_model_adapter,
+        get_model_spec,
+        normalize_category,
+        list_registered_models,
+    )
+    from ml.integration.xray_adapter import DatasetValidationError
+except Exception as e:
+    model_registry = None
+    get_model_adapter = None
+    get_model_spec = None
+    normalize_category = lambda x: x
+    list_registered_models = lambda: []
+    class DatasetValidationError(Exception):
+        pass
 
 try:
     from supabase import create_client, Client

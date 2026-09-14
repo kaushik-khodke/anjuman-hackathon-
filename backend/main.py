@@ -77,6 +77,7 @@ from routes.patient import router as patient_router
 from routes.payment import router as payment_router
 from routes.whatsapp import router as whatsapp_router
 from routes.federation import router as federation_router
+from routes.qml_router import router as qml_router
 
 app.include_router(health_router)
 app.include_router(triage_router)
@@ -87,6 +88,7 @@ app.include_router(payment_router)
 app.include_router(whatsapp_router)
 app.include_router(resource_router)
 app.include_router(federation_router)
+app.include_router(qml_router)
 
 PORT = int(os.getenv("PORT", 8000))
 
@@ -245,7 +247,8 @@ class VoiceOrderRequest(BaseModel):
 
 class InitiateCallRequest(BaseModel):
     patient_id: str
-    phone_number: str = None
+    phone_number: Optional[str] = None
+    patient_name: Optional[str] = None
 
 class TriageAnalyzeRequest(BaseModel):
     vitals: Dict[str, str]
@@ -616,60 +619,89 @@ async def root_voice_order(request: VoiceOrderRequest):
     """
     return await voice_order(request)
 
+@app.post("/call-patient")
 @app.post("/initiate-call")
 async def initiate_call(request: InitiateCallRequest):
     """
-    Initiates an outbound Twilio call to the patient.
-    Gathers patient context and securely passes it to ElevenLabs.
+    Initiates an outbound call to the patient via ElevenLabs / Twilio,
+    gathering clinical medication and prescription context.
     """
+    global outbound_call_service
     if not outbound_call_service:
-        raise HTTPException(status_code=503, detail="Outbound calling is not configured on this server.")
+        try:
+            outbound_call_service = OutboundCallService()
+        except Exception as e:
+            print(f"⚠️ Initializing OutboundCallService on demand: {e}")
 
     try:
         sb = _get_sb()
-        # 1. Fetch patient profile & phone number (if not provided in request)
-        pt_res = sb.table("patients").select("id, full_name, phone").eq("user_id", request.patient_id).maybe_single().execute()
-        if not pt_res.data:
-            raise HTTPException(status_code=404, detail="Patient profile not found.")
-        
-        patient = pt_res.data
-        
-        # Prefer the explicitly provided phone number, fallback to profile
-        phone = request.phone_number or patient.get("phone")
-        if not phone:
-            raise HTTPException(status_code=400, detail="No phone number provided or configured in profile.")
+        patient = None
+        if sb:
+            try:
+                pt_res = sb.table("patients").select("id, full_name, phone").eq("user_id", request.patient_id).maybe_single().execute()
+                if pt_res and pt_res.data:
+                    patient = pt_res.data
+            except Exception as err:
+                print(f"ℹ️ Could not query patients table: {err}")
 
-        # Ensure phone is E.164 formatted. Simple check, might need better validation in prod.
-        if not phone.startswith("+"):
-            phone = "+" + phone.lstrip("0") # very basic assumption, frontend should enforce E.164
+        # Prefer explicitly provided phone number, fallback to profile, fallback to default
+        phone = request.phone_number or (patient.get("phone") if patient else None) or "+919022434807"
+        patient_name = request.patient_name or (patient.get("full_name") if patient else None) or "Patient"
 
-        # 2. Gather context: active medicines
-        meds_res = await get_my_medicines(request.patient_id)
+        # Ensure phone is E.164 formatted (strip whitespace, dashes, handle 10-digit Indian numbers)
+        clean_phone = re.sub(r"[^\d+]", "", str(phone).strip())
+        digits_only = re.sub(r"\D", "", clean_phone)
+        if clean_phone.startswith("+91"):
+            pass
+        elif digits_only.startswith("91") and len(digits_only) == 12:
+            clean_phone = "+" + digits_only
+        elif len(digits_only) == 10:
+            clean_phone = "+91" + digits_only
+        elif not clean_phone.startswith("+"):
+            clean_phone = "+" + clean_phone.lstrip("0")
+
+
+        # Gather context: active medicines
         active_meds = []
-        if meds_res.get("success"):
-            for order in meds_res.get("orders", []):
-                for item in order.get("items", []):
-                    med_details = item.get("medicines", {})
-                    active_meds.append(med_details.get("name"))
-        
-        # 3. Gather context: prescriptions uploaded
-        recs = sb.table("records").select("title, extracted_text").eq("patient_id", patient["id"]).eq("record_type", "prescription").execute()
-        prescriptions = [r["title"] for r in (recs.data or [])]
+        try:
+            meds_res = await get_my_medicines(request.patient_id)
+            if meds_res and meds_res.get("success"):
+                for order in meds_res.get("orders", []):
+                    for item in order.get("items", []):
+                        med_details = item.get("medicines", {})
+                        if med_details and med_details.get("name"):
+                            active_meds.append(med_details.get("name"))
+        except Exception as err:
+            print(f"ℹ️ Could not fetch medicines: {err}")
+
+        # Gather context: prescriptions uploaded
+        prescriptions = []
+        if sb and patient and patient.get("id"):
+            try:
+                recs = sb.table("records").select("title, extracted_text").eq("patient_id", patient["id"]).eq("record_type", "prescription").execute()
+                prescriptions = [r["title"] for r in (recs.data or []) if r.get("title")]
+            except Exception as err:
+                print(f"ℹ️ Could not fetch prescriptions: {err}")
 
         context = {
             "patient_id": request.patient_id,
-            "patient_name": patient["full_name"],
+            "patient_name": patient_name,
             "current_medicines": list(set(active_meds)),
             "uploaded_prescriptions": prescriptions
         }
 
-        # 4. Initiate Call
-        call_sid = outbound_call_service.initiate_call(to_number=phone, patient_info=context)
+        # Initiate Call
+        if not outbound_call_service:
+            outbound_call_service = OutboundCallService()
 
-        return {"success": True, "message": "Call initiated successfully", "call_sid": call_sid}
+        call_sid = outbound_call_service.initiate_call(to_number=clean_phone, patient_info=context)
+
+        return {"success": True, "message": "Call initiated successfully! Check your phone.", "call_sid": call_sid}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"❌ Error initiating call: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "detail": str(e), "error": str(e)})
+
 
 
 
@@ -2667,12 +2699,36 @@ async def analyze_health(request: HealthAnalysisRequest):
                     { "meal": "Dinner", "option": "Baked salmon or dal tadka with steamed vegetables and brown rice." }
                 ]
 
+        # Execute Hybrid QML Disease Prediction Pipeline (SIH 26139)
+        qml_response = None
+        try:
+            from qml.predict import run_qml_disease_prediction
+            qml_input = dict(ctx.vitals) if ctx.vitals else {}
+            if ctx.bp_val and "/" in str(ctx.bp_val):
+                qml_input["trestbps"] = ctx.bp_val.split("/")[0].strip()
+            if ctx.sugar_val:
+                qml_input["sugar"] = ctx.sugar_val
+            if ctx.hr_val:
+                qml_input["thalach"] = ctx.hr_val
+            if ctx.patient_info:
+                if ctx.patient_info.get("age"):
+                    qml_input["age"] = ctx.patient_info["age"]
+                if ctx.patient_info.get("gender"):
+                    qml_input["sex"] = 1 if str(ctx.patient_info["gender"]).lower().startswith("m") else 0
+
+            qml_res = run_qml_disease_prediction(qml_input, patient_id=request.user_id)
+            if qml_res:
+                qml_response = qml_res.model_dump() if hasattr(qml_res, "model_dump") else qml_res.dict()
+        except Exception as qml_err:
+            print(f"⚠️ QML Disease Prediction execution notice: {qml_err}")
+
         # Build final complete response payload
         return {
             "success": True,
             "prediction": ctx.analysis_result,
             "detailed_analysis": ai_insights.get("explain_plain_english") or "Clinical assessment complete.",
             "report": ai_insights,
+            "qml_analysis": qml_response,
             "tips": ai_insights.get("nutrition_plan", {}).get("foods_to_eat", ["Maintain balanced nutrition", "Stay hydrated", "Exercise regularly"]),
             "follow_up_prompt": "Would you like me to clarify any specific laboratory or vital sign reading?",
             "is_emergency": ctx.triage_priority in ["RED", "ORANGE", "YELLOW"]
@@ -3133,12 +3189,12 @@ async def whatsapp_webhook(req: WhatsAppWebhookRequest):
 
 class SendHealthReportWhatsAppRequest(BaseModel):
     user_id: str
-    phone: Optional[str] = "8806275531"
+    phone: Optional[str] = "9022434807"
 
 @app.post("/send-whatsapp-health-report")
 async def send_whatsapp_health_report(req: SendHealthReportWhatsAppRequest):
     """
-    Sends the patient's official AI Health Insight report summary directly via WhatsApp to 8806275531.
+    Sends the patient's official AI Health Insight report summary directly via WhatsApp to 9022434807.
     """
     from whatsapp_service import send_whatsapp_message
     from resource_load import _get_sb
@@ -3166,7 +3222,7 @@ async def send_whatsapp_health_report(req: SendHealthReportWhatsAppRequest):
         print(f"⚠️ Patient lookup notice: {pe}")
 
     if not target_phone:
-        target_phone = "8806275531"
+        target_phone = "9022434807"
 
     # 2. Get latest vitals / health data safely
     vitals_data = {}

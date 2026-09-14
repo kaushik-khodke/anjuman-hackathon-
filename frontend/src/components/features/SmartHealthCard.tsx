@@ -213,7 +213,7 @@ export function SmartHealthCard({
                           </div>
                           <div>
                             <p className="text-[10px] text-white/50 uppercase">Phone</p>
-                            <p className="text-xs font-semibold">+91 {patientData.phone}</p>
+                            <p className="text-xs font-semibold">+91 {patientData.phone ? patientData.phone.replace(/^\+?91[\s-]*/, '').trim() : '9022434807'}</p>
                           </div>
                         </div>
 

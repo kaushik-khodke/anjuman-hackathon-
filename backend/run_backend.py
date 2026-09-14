@@ -69,7 +69,8 @@ def main():
         sys.executable, "-m", "uvicorn", "main:app",
         "--host", "0.0.0.0",
         "--port", PORT,
-        "--reload"
+        "--reload",
+        "--reload-dir", backend_dir
     ]
     print(f"⚙️ Launching Uvicorn backend on port {PORT}...")
     try:

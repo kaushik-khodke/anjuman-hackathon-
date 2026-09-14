@@ -106,7 +106,7 @@ export default function Dashboard() {
           .select("id", { count: "exact" })
           .eq("patient_id", patientId),
         supabase
-          .from("access_logs")
+          .from("consent_requests")
           .select("id", { count: "exact" })
           .eq("patient_id", patientId)
           .eq("status", "pending"),
@@ -125,20 +125,38 @@ export default function Dashboard() {
     if (!user) return;
     setIsCalling(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/call-patient`, {
+      const rawPhone = patientData?.phone || "+91 9022434807";
+      const digits = rawPhone.replace(/\D/g, "");
+      const targetPhone = digits.length === 10 ? `+91${digits}` : (rawPhone.startsWith("+") ? rawPhone : `+${digits}`);
+      const targetName = patientData?.full_name || "Patient";
+
+      let response = await fetch(`${API_BASE_URL}/call-patient`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           patient_id: user.id,
-          phone_number: patientData?.phone || "+918806275531",
-          patient_name: patientData?.full_name || "Patient",
+          phone_number: targetPhone,
+          patient_name: targetName,
         }),
       });
+
+      if (response.status === 404) {
+        response = await fetch(`${API_BASE_URL}/initiate-call`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patient_id: user.id,
+            phone_number: targetPhone,
+            patient_name: targetName,
+          }),
+        });
+      }
+
       const data = await response.json();
-      if (data.success) {
-        alert("The AI Agent is calling you now! Please check your phone.");
+      if (response.ok && data.success) {
+        alert(`📞 The AI Pharmacist is calling you now!\nPlease check your phone (${targetPhone}).`);
       } else {
-        alert("Notice: " + (data.detail || data.error || "Failed to initiate call."));
+        alert("Notice: " + (data.detail || data.error || data.message || "Failed to initiate call."));
       }
     } catch (err) {
       alert("Error initiating call. Check console for details.");
