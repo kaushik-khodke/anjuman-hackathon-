@@ -478,29 +478,19 @@ export default function MyMedicines() {
         if (!user?.id || currentQty <= 0) return
         setTakingDose(prev => ({ ...prev, [orderItemId]: true }))
         try {
-            // First log the adherence event
-            await fetch(`${API_BASE_URL}/log-dose`, {
+            // Log adherence and atomically decrement inventory on backend when status is 'taken'
+            const res = await fetch(`${API_BASE_URL}/log-dose`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: user.id, order_item_id: orderItemId, medicine_id: medicineId, status })
             })
-            fetchAdherenceData() // update charts
-            
-            // If dose is taken, we ALSO consume it to deduct stock smoothly
-            if (status === 'taken') {
-                const res = await fetch(`${API_BASE_URL}/consume-dose`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ patient_id: user.id, order_item_id: orderItemId }),
-                })
-                const data = await res.json()
-                if (data.success) {
-                    setLocalQty(prev => ({ ...prev, [orderItemId]: data.remaining }))
-                    setTimeout(fetchOrders, 1500)
-                }
-            } else {
-                setTimeout(fetchOrders, 1500)
+            const data = await res.json()
+            if (data.success && typeof data.remaining === 'number') {
+                setLocalQty(prev => ({ ...prev, [orderItemId]: data.remaining }))
             }
+            fetchAdherenceData() // update charts
+            window.dispatchEvent(new CustomEvent('medication-updated'))
+            setTimeout(fetchOrders, 1200)
         } catch (e) {
             console.error(e)
         } finally {

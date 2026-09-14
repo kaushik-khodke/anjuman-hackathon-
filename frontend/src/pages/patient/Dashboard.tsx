@@ -52,6 +52,18 @@ type PatientData = {
   smart_pin?: string | null;
 };
 
+const formatE164Phone = (phone?: string | null, fallback = "+919022434807"): string => {
+  if (!phone || !phone.trim()) return fallback;
+  const raw = phone.trim();
+  const digits = raw.replace(/\D/g, "");
+  if (raw.startsWith("+")) return "+" + digits;
+  if (raw.startsWith("00")) return "+" + digits.slice(2);
+  const cleanDigits = digits.startsWith("0") && digits.length === 11 ? digits.slice(1) : digits;
+  if (cleanDigits.length === 10) return `+91${cleanDigits}`;
+  if (cleanDigits.length === 12 && cleanDigits.startsWith("91")) return `+${cleanDigits}`;
+  return `+${cleanDigits}`;
+};
+
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -66,11 +78,11 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ records: 0, consents: 0 });
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       fetchPatientProfile();
       fetchStats();
     }
-  }, [user]);
+  }, [user?.id]);
 
   const fetchPatientProfile = async () => {
     try {
@@ -107,6 +119,7 @@ export default function Dashboard() {
           .eq("patient_id", patientId),
         supabase
           .from("consent_requests")
+          .from("consent_requests")
           .select("id", { count: "exact" })
           .eq("patient_id", patientId)
           .eq("status", "pending"),
@@ -123,6 +136,14 @@ export default function Dashboard() {
 
   const handleCallMe = async () => {
     if (!user) return;
+    const defaultPhone = (patientData?.phone && !patientData.phone.includes("8806275531"))
+      ? patientData.phone
+      : "9022434807";
+
+    const inputPhone = window.prompt("Enter your phone number to receive a call from our AI Pharmacist:", defaultPhone);
+    if (!inputPhone || !inputPhone.trim()) return;
+
+    const targetPhone = formatE164Phone(inputPhone.trim(), "+919022434807");
     setIsCalling(true);
     try {
       const rawPhone = patientData?.phone || "+91 9022434807";
@@ -158,9 +179,9 @@ export default function Dashboard() {
       } else {
         alert("Notice: " + (data.detail || data.error || data.message || "Failed to initiate call."));
       }
-    } catch (err) {
-      alert("Error initiating call. Check console for details.");
-      console.error(err);
+    } catch (err: any) {
+      alert("Notice: " + (err?.message || "Error initiating call. Check console for details."));
+      console.error("Call Me error:", err);
     } finally {
       setIsCalling(false);
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { API_BASE_URL } from "@/lib/api";
@@ -15,48 +15,61 @@ interface AgendaMedicine {
 
 export function MedicineReminder() {
   const { user, role } = useAuth();
+  const userId = user?.id;
+  const isPatient = role === "patient";
+
   const [upcomingMeds, setUpcomingMeds] = useState<AgendaMedicine[]>([]);
   const [takenIds, setTakenIds] = useState<Set<string>>(new Set());
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
 
-  const fetchTodayLogs = useCallback(async () => {
-    if (!user?.id) return;
-    try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+  const apiMedsRef = useRef<AgendaMedicine[]>([]);
+  const takenIdsRef = useRef<Set<string>>(takenIds);
+  const dismissedIdsRef = useRef<Set<string>>(dismissedIds);
 
-      const { data, error } = await supabase
-        .from("medication_logs")
-        .select("order_item_id, status")
-        .eq("user_id", user.id)
-        .eq("status", "taken")
-        .gte("created_at", today.toISOString());
+  useEffect(() => {
+    takenIdsRef.current = takenIds;
+  }, [takenIds]);
 
-      if (error) throw error;
-      setTakenIds(new Set(data.map((l: any) => l.order_item_id)));
-    } catch (e) {
-      console.error("Error fetching med logs for reminder:", e);
-    }
-  }, [user?.id]);
+  useEffect(() => {
+    dismissedIdsRef.current = dismissedIds;
+  }, [dismissedIds]);
 
   const checkReminders = useCallback(() => {
-    if (!user?.id || role !== "patient") return;
+    if (!userId || !isPatient) {
+      setUpcomingMeds([]);
+      return;
+    }
 
-    const cacheKey = `daily_agenda_${user.id}`;
+    const cacheKey = `daily_agenda_${userId}`;
     const raw = localStorage.getItem(cacheKey);
-    if (!raw) return;
+    let medList: AgendaMedicine[] = [];
+
+    if (raw) {
+      try {
+        const { agenda } = JSON.parse(raw);
+        if (agenda && Array.isArray(agenda.medicines) && agenda.medicines.length > 0) {
+          medList = agenda.medicines;
+        }
+      } catch { }
+    }
+
+    if (medList.length === 0) {
+      medList = apiMedsRef.current;
+    }
+
+    if (medList.length === 0) {
+      setUpcomingMeds([]);
+      return;
+    }
 
     try {
-      const { agenda } = JSON.parse(raw);
-      if (!agenda || !agenda.medicines) return;
-
       const now = new Date();
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-      const due = agenda.medicines.filter((med: AgendaMedicine) => {
+      const due = medList.filter((med: AgendaMedicine) => {
         if (!med.time || !med.item_id) return false;
-        if (takenIds.has(med.item_id) || dismissedIds.has(med.item_id)) return false;
+        if (takenIdsRef.current.has(med.item_id) || dismissedIdsRef.current.has(med.item_id)) return false;
 
         const [hours, minutes] = med.time.split(":").map(Number);
         const medMinutes = hours * 60 + minutes;
@@ -70,23 +83,96 @@ export function MedicineReminder() {
     } catch (e) {
       console.error("Error checking reminders:", e);
     }
-  }, [user?.id, role, takenIds, dismissedIds]);
+  }, [userId, isPatient]);
 
-  useEffect(() => {
-    if (user && role === "patient") {
-      fetchTodayLogs();
-      checkReminders();
-      const interval = setInterval(checkReminders, 60000); // Check every minute
-      return () => clearInterval(interval);
+  const fetchTodayLogs = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from("medication_logs")
+        .select("order_item_id, status")
+        .eq("user_id", userId)
+        .eq("status", "taken")
+        .gte("created_at", today.toISOString());
+
+      if (error) throw error;
+      const newTaken = new Set<string>((data || []).map((l: any) => l.order_item_id));
+      setTakenIds(newTaken);
+      takenIdsRef.current = newTaken;
+    } catch (e) {
+      console.error("Error fetching med logs for reminder:", e);
     }
-  }, [user, role, fetchTodayLogs, checkReminders]);
+  }, [userId]);
 
-  // Listen for global medication updates to refresh logs
+  const fetchDueDosesFromApi = useCallback(async () => {
+    if (!userId || !isPatient) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/due-doses?patient_id=${userId}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.items)) {
+        const mapped: AgendaMedicine[] = [];
+        data.items.forEach((item: any) => {
+          const freq = item.frequency_per_day || 1;
+          const medName = item.medicines?.name || "Medication";
+          const medId = item.medicine_id || item.medicines?.id;
+          const times = freq === 1 ? ["08:00"] : freq === 2 ? ["08:00", "20:00"] : ["08:00", "14:00", "20:00"];
+          times.forEach(t => {
+            mapped.push({
+              time: t,
+              name: medName,
+              note: item.dosage_text || undefined,
+              med_id: medId,
+              item_id: item.id
+            });
+          });
+        });
+        apiMedsRef.current = mapped;
+      }
+    } catch (err) {
+      console.error("Error fetching due doses fallback:", err);
+    }
+  }, [userId, isPatient]);
+
+  // Initial load when user and role are resolved
   useEffect(() => {
-    const handleUpdate = () => fetchTodayLogs();
+    if (!userId || !isPatient) return;
+
+    let isMounted = true;
+    const loadInitial = async () => {
+      await Promise.all([fetchTodayLogs(), fetchDueDosesFromApi()]);
+      if (isMounted) checkReminders();
+    };
+
+    loadInitial();
+
+    // Routine timer: check reminders locally every 60 seconds without calling backend API
+    const interval = setInterval(() => {
+      checkReminders();
+    }, 60000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [userId, isPatient, fetchTodayLogs, fetchDueDosesFromApi, checkReminders]);
+
+  // Re-check reminders whenever user takes or dismisses a medicine
+  useEffect(() => {
+    checkReminders();
+  }, [takenIds, dismissedIds, checkReminders]);
+
+  // Listen for global medication updates to refresh logs & doses
+  useEffect(() => {
+    const handleUpdate = async () => {
+      await Promise.all([fetchTodayLogs(), fetchDueDosesFromApi()]);
+      checkReminders();
+    };
     window.addEventListener("medication-updated", handleUpdate);
     return () => window.removeEventListener("medication-updated", handleUpdate);
-  }, [fetchTodayLogs]);
+  }, [fetchTodayLogs, fetchDueDosesFromApi, checkReminders]);
 
   const handleTakeDose = async (med: AgendaMedicine) => {
     if (!user?.id || !med.med_id || !med.item_id) return;

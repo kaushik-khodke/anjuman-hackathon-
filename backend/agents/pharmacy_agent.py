@@ -237,7 +237,55 @@ class PharmacyAgent(BaseAgent):
                 print(f"⚠️ Stock decrement failed for {item['medicine_id']}: {rpc_err}")
             fulfilled.append({"name": item["medicines"]["name"], "qty": item["qty"]})
 
-        return {"order_id": order_id, "status": "fulfilled", "items": fulfilled}
+    async def place_order(
+        self,
+        user_id: str,
+        medicine_name: str,
+        quantity: int = 1,
+        frequency_per_day: Optional[str] = None,
+        dosage_text: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Direct helper to place a pending order via the PharmacyAgent workflow.
+        Returns a dict containing success status, order_id, checkout_url, and spoken message.
+        """
+        res = await self.run(
+            task=f"order {quantity} {medicine_name}",
+            context={
+                "action": "order",
+                "query": medicine_name,
+                "qty": quantity,
+                "user_id": user_id,
+                "frequency_per_day": frequency_per_day,
+                "dosage_text": dosage_text
+            }
+        )
+        if res.success:
+            order_id = res.data.get("order_id") if isinstance(res.data, dict) else None
+            checkout_url = res.data.get("checkout_url") if isinstance(res.data, dict) else ""
+            clean_spoken_msg = f"Your pending order for {quantity} units of {medicine_name} has been placed successfully. You can complete the payment in your Order History tab on the website."
+            return {
+                "success": True,
+                "status": "success",
+                "message": clean_spoken_msg,
+                "result": clean_spoken_msg,
+                "response": clean_spoken_msg,
+                "order_id": order_id,
+                "checkout_url": checkout_url,
+                "data": res.data
+            }
+        else:
+            raw_msg = res.message or f"Could not place order for {medicine_name}."
+            clean_msg = raw_msg.replace("**", "").replace("[", "").replace("]", "").split("(")[0].strip()
+            return {
+                "success": False,
+                "status": "error",
+                "message": clean_msg,
+                "result": clean_msg,
+                "response": clean_msg,
+                "order_id": None,
+                "checkout_url": ""
+            }
 
     # ------------------------------------------------------------------
     # run() — called by the orchestrator
@@ -334,6 +382,7 @@ class PharmacyAgent(BaseAgent):
                 return AgentResult(success=False, agent_name=self.name, message="Failed to create order draft.")
 
             # Generate Stripe Checkout Link (Internal Call)
+            checkout_url = ""
             try:
                 frontend_url = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000").rstrip("/")
                 resp = await _create_stripe_checkout(
@@ -342,20 +391,21 @@ class PharmacyAgent(BaseAgent):
                     cancel_url=f"{frontend_url}/payment/cancel"
                 )
                 if resp.get("success"):
-                    checkout_url = resp.get("url")
-                    return AgentResult(
-                        success=True,
-                        agent_name=self.name,
-                        data={"order_id": draft["order_id"], "checkout_url": checkout_url},
-                        message=(
-                            f"Almost done! Your order for **{qty}x {med['name']}** has been drafted. "
-                            f"\\n\\n💳 Please complete your payment here to finalise the order: \\n[Pay for Order]({checkout_url})"
-                        )
-                    )
-                else:
-                    return AgentResult(success=False, agent_name=self.name, message=f"Checkout creation failed: {resp.get('error')}")
+                    checkout_url = resp.get("url") or ""
             except Exception as e:
-                return AgentResult(success=False, agent_name=self.name, message=f"Internal checkout routing error: {str(e)}")
+                print(f"Stripe link generation note: {e}")
+
+            pay_note = f"\\n\\n💳 Please complete your payment here to finalise the order: \\n[Pay for Order]({checkout_url})" if checkout_url else "\\nYou can complete payment from your Order History tab on the website."
+
+            return AgentResult(
+                success=True,
+                agent_name=self.name,
+                data={"order_id": draft["order_id"], "checkout_url": checkout_url},
+                message=(
+                    f"Your pending order for {qty}x {med['name']} has been placed successfully."
+                    f"{pay_note}"
+                )
+            )
 
         # --- ORDER FROM PRESCRIPTION ---
         if action == "order_from_prescription":

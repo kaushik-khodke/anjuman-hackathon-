@@ -25,30 +25,6 @@ class HealthAnalyzeRequest(BaseModel):
     patient_id: Optional[str] = None
 
 
-@router.post("/patient/smart-insights")
-async def patient_smart_insights(payload: Dict[str, Any]):
-    """Return smart health insights for patient dashboard."""
-    return {
-        "success": True,
-        "insights": [
-            {"title": "Vitals Status", "message": "Heart rate and blood pressure are within healthy range.", "type": "success"},
-            {"title": "Medication Schedule", "message": "Remember to take Paracetamol (500mg) after lunch.", "type": "info"},
-        ],
-    }
-
-
-@router.post("/patient/daily-agenda")
-async def patient_daily_agenda(payload: Dict[str, Any]):
-    """Return daily schedule and dose reminders for patient."""
-    return {
-        "success": True,
-        "agenda": [
-            {"time": "08:00 AM", "task": "Morning Vitals Check", "status": "completed"},
-            {"time": "01:00 PM", "task": "Paracetamol 500mg", "status": "pending"},
-            {"time": "08:00 PM", "task": "Evening Walk & Pulse Check", "status": "pending"},
-        ],
-    }
-
 
 @router.post("/chat")
 async def patient_chat(req: ChatRequest):

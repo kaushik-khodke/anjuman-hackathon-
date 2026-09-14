@@ -4,10 +4,11 @@ import { useAuth } from "./useAuth";
 
 export function useConsentsCount() {
   const { user, role } = useAuth();
+  const userId = user?.id;
   const [pendingCount, setPendingCount] = useState<number>(0);
 
   const fetchCount = useCallback(async () => {
-    if (!user || role !== "patient") {
+    if (!userId || role !== "patient") {
       setPendingCount(0);
       return;
     }
@@ -17,7 +18,7 @@ export function useConsentsCount() {
       const { data: patient } = await supabase
         .from("patients")
         .select("id")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .maybeSingle();
 
       const patientId = patient?.id;
@@ -28,10 +29,10 @@ export function useConsentsCount() {
         .select("id", { count: "exact", head: true })
         .eq("status", "pending");
 
-      if (patientId && patientId !== user.id) {
-        query = query.or(`patient_id.eq.${user.id},patient_id.eq.${patientId}`);
+      if (patientId && patientId !== userId) {
+        query = query.or(`patient_id.eq.${userId},patient_id.eq.${patientId}`);
       } else {
-        query = query.eq("patient_id", user.id);
+        query = query.eq("patient_id", userId);
       }
 
       const { count, error } = await query;
@@ -42,9 +43,11 @@ export function useConsentsCount() {
     } catch (err) {
       console.error("Error fetching pending consents count:", err);
     }
-  }, [user, role]);
+  }, [userId, role]);
 
   useEffect(() => {
+    if (!userId || role !== "patient") return;
+
     fetchCount();
 
     // Custom event listener for instant local updates across the app
@@ -53,7 +56,7 @@ export function useConsentsCount() {
 
     // Supabase Realtime Subscription for live multi-tab / remote updates
     const channel = supabase
-      .channel("consent-requests-badge-sync")
+      .channel(`consent-requests-badge-${userId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "consent_requests" },
@@ -67,7 +70,7 @@ export function useConsentsCount() {
       window.removeEventListener("consent-updated", handleCustomUpdate);
       supabase.removeChannel(channel);
     };
-  }, [fetchCount]);
+  }, [userId, role, fetchCount]);
 
   return { pendingCount, refreshConsentsCount: fetchCount };
 }

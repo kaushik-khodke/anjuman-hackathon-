@@ -3,6 +3,23 @@ import json
 import time
 import requests
 
+def format_e164_phone(phone: str, default_number: str = "+919022434807") -> str:
+    if not phone or not str(phone).strip():
+        return default_number
+    raw = str(phone).strip()
+    digits = "".join(c for c in raw if c.isdigit())
+    if raw.startswith("+"):
+        return "+" + digits
+    if raw.startswith("00"):
+        return "+" + digits[2:]
+    if digits.startswith("0") and len(digits) == 11:
+        digits = digits[1:]
+    if len(digits) == 10:
+        return "+91" + digits
+    if len(digits) == 12 and digits.startswith("91"):
+        return "+" + digits
+    return "+" + digits
+
 class OutboundCallService:
     def __init__(self):
         # ElevenLabs conversational AI credentials
