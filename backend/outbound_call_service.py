@@ -2,6 +2,23 @@ import os
 import json
 import requests
 
+def format_e164_phone(phone: str, default_number: str = "+919022434807") -> str:
+    if not phone or not str(phone).strip():
+        return default_number
+    raw = str(phone).strip()
+    digits = "".join(c for c in raw if c.isdigit())
+    if raw.startswith("+"):
+        return "+" + digits
+    if raw.startswith("00"):
+        return "+" + digits[2:]
+    if digits.startswith("0") and len(digits) == 11:
+        digits = digits[1:]
+    if len(digits) == 10:
+        return "+91" + digits
+    if len(digits) == 12 and digits.startswith("91"):
+        return "+" + digits
+    return "+" + digits
+
 class OutboundCallService:
     def __init__(self):
         # The CALLING agent can be on a separate ElevenLabs account/key from the voice synthesis agent
@@ -40,10 +57,8 @@ class OutboundCallService:
             "Content-Type": "application/json"
         }
         
-        # Ensure it has exactly a + prefix. Simple formatting
-        clean_number = to_number.strip()
-        if not clean_number.startswith("+"):
-            clean_number = "+" + clean_number.lstrip("0")
+        # Ensure proper E.164 formatting (e.g. 9022434807 -> +919022434807)
+        clean_number = format_e164_phone(to_number)
         
         data = {
             "agent_id": self.elevenlabs_agent_id,

@@ -107,7 +107,7 @@ export function Analysis() {
     const resultsRef = useRef<HTMLDivElement>(null);
 
     const handleSendWhatsAppReport = async () => {
-        const defaultPhone = user?.phone || "8806275531";
+        const defaultPhone = user?.phone || "9022434807";
         const inputPhone = window.prompt("Enter the WhatsApp phone number to send the AI Health Report to:", defaultPhone);
         if (!inputPhone) return; // User cancelled
 

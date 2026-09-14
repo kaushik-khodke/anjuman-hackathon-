@@ -17,7 +17,7 @@ router = APIRouter(tags=["WhatsApp Integration"])
 
 class SendHealthReportWhatsAppRequest(BaseModel):
     user_id: str
-    phone: Optional[str] = "8806275531"
+    phone: Optional[str] = "9022434807"
 
 
 @router.post("/send-whatsapp-health-report")
@@ -47,7 +47,7 @@ async def send_whatsapp_health_report(req: SendHealthReportWhatsAppRequest):
         logger.warning(f"Patient lookup notice in WhatsApp router: {pe}")
 
     if not target_phone:
-        target_phone = "8806275531"
+        target_phone = "9022434807"
 
     vitals_data = {}
     try:

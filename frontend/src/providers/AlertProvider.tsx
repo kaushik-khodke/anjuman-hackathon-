@@ -35,8 +35,13 @@ export function AlertProvider({ children }: { children: ReactNode }) {
         setAlerts(prev => prev.filter(a => a.id !== id));
     };
 
+    const userId = user?.id;
+
     useEffect(() => {
-        console.log("AlertProvider initialized for user:", user?.id, "role:", role);
+        // Only clinical and hospital staff listen to real-time emergency triage alerts
+        if (role !== "doctor" && role !== "hospital") {
+            return;
+        }
 
         const channel = supabase
             .channel("global_triage_alerts")
@@ -44,7 +49,6 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                 "postgres_changes",
                 { event: "*", schema: "public", table: "triage_queue" },
                 (payload) => {
-                    console.log("Realtime triage_queue change:", payload);
                     const newPatient = payload.new as any;
 
                     // On DELETE, payload.new is empty.
@@ -74,14 +78,12 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                     }
                 }
             )
-            .subscribe((status) => {
-                console.log("Supabase Realtime subscription status:", status);
-            });
+            .subscribe();
 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [user, role]);
+    }, [userId, role]);
 
     return (
         <AlertContext.Provider value={{ alerts, dismissAlert }}>
